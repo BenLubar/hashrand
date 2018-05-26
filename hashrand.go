@@ -1,11 +1,29 @@
 // Package hashrand provides a random number source using hash functions.
 package hashrand // import "github.com/BenLubar/hashrand"
 
+import (
+	"crypto/sha1"
+	"io"
+)
+
 func (s *Source) fill() {
+	if s.Hash == nil {
+		s.Hash = sha1.New()
+	}
+
+	// Don't output the raw hash of the seed first.
+	if s.last == nil {
+		_, _ = s.Hash.Write(s.seed)
+		s.last = s.Hash.Sum(nil)
+	}
+
 	s.Hash.Reset()
-	_, _ = s.Hash.Write(s.seed)
 	_, _ = s.Hash.Write(s.last)
+	_, _ = s.Hash.Write(s.seed)
 	s.last = s.Hash.Sum(s.last[:0])
+	if len(s.last) == 0 {
+		panic(io.ErrNoProgress)
+	}
 	s.buf = append(s.buf, s.last...)
 }
 

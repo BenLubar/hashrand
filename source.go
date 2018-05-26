@@ -12,6 +12,8 @@ type Source struct {
 	// Hash is the hash function used by this source. It should be treated
 	// as immutable once the source has been used to generate random
 	// numbers.
+	//
+	// If Hash is not explicitly set, it defaults to sha1.New().
 	Hash hash.Hash
 
 	seed []byte

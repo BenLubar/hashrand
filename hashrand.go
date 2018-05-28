@@ -13,6 +13,7 @@ func (s *Source) fill() {
 
 	// Don't output the raw hash of the seed first.
 	if s.last == nil {
+		s.Hash.Reset()
 		_, _ = s.Hash.Write(s.seed)
 		s.last = s.Hash.Sum(nil)
 	}

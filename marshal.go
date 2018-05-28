@@ -26,6 +26,35 @@ func (s *Source) MarshalBinary() ([]byte, error) {
 	return buf, nil
 }
 
+func readByteSlices(b []byte, count int) ([][]byte, error) {
+	lengths := make([]uint64, count)
+	var total uint64
+	for i := range lengths {
+		var n int
+		lengths[i], n = binary.Uvarint(b)
+		if n <= 0 {
+			return nil, errInvalidData
+		}
+		total += lengths[i]
+		b = b[n:]
+	}
+
+	if uint64(len(b)) != total {
+		return nil, errInvalidData
+	}
+
+	slices := make([][]byte, count)
+	buffer := make([]byte, total)
+	copy(buffer, b)
+
+	for i, l := range lengths {
+		slices[i] = buffer[:l:l]
+		buffer = buffer[l:]
+	}
+
+	return slices, nil
+}
+
 // UnmarshalBinary resets the state of s to the state encoded in b. It does
 // not assign a value to Hash, so Hash should be assigned manually before
 // using this Source to generate any random numbers.
@@ -35,39 +64,12 @@ func (s *Source) UnmarshalBinary(b []byte) error {
 	}
 	b = b[1:]
 
-	seedLen, n := binary.Uvarint(b)
-	if n <= 0 {
-		return errInvalidData
-	}
-	b = b[n:]
-
-	bufLen, n := binary.Uvarint(b)
-	if n <= 0 {
-		return errInvalidData
-	}
-	b = b[n:]
-
-	lastLen, n := binary.Uvarint(b)
-	if n <= 0 {
-		return errInvalidData
-	}
-	b = b[n:]
-
-	if uint64(len(b)) != seedLen+bufLen+lastLen {
-		return errInvalidData
+	slices, err := readByteSlices(b, 3)
+	if err != nil {
+		return err
 	}
 
-	s.seed = make([]byte, seedLen)
-	s.buf = make([]byte, bufLen)
-	s.last = make([]byte, lastLen)
-
-	b = b[copy(s.seed, b):]
-	b = b[copy(s.buf, b):]
-	b = b[copy(s.last, b):]
-
-	if len(b) != 0 {
-		panic("hashrand: internal error")
-	}
+	s.seed, s.buf, s.last = slices[0], slices[1], slices[2]
 
 	return nil
 }

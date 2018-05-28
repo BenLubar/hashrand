@@ -46,7 +46,11 @@ func TestSHARND(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if e := os.RemoveAll(tempDir); e != nil {
+			t.Error(e)
+		}
+	}()
 
 	for _, f := range input {
 		downloadFile(f.URL, filepath.Join(tempDir, f.Name), f.Hash)
@@ -76,8 +80,8 @@ func TestSHARND(t *testing.T) {
 			panic(err)
 		}
 
-		b, err := ioutil.ReadFile(filepath.Join(tempDir, "sharnd.out"))
-		if err != nil {
+		b, e := ioutil.ReadFile(filepath.Join(tempDir, "sharnd.out"))
+		if e != nil {
 			panic(err)
 		}
 
@@ -114,7 +118,11 @@ func downloadFile(url, path string, hash [20]byte) {
 	if err != nil {
 		panic(err)
 	}
-	defer res.Body.Close()
+	defer func() {
+		if e := res.Body.Close(); e != nil {
+			panic(err)
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		panic("failed request to " + url + ": " + res.Status)
@@ -124,7 +132,11 @@ func downloadFile(url, path string, hash [20]byte) {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+	defer func() {
+		if e := f.Close(); e != nil {
+			panic(e)
+		}
+	}()
 
 	digest := sha1.New()
 	_, err = io.Copy(io.MultiWriter(digest, f), res.Body)

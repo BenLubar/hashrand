@@ -26,7 +26,7 @@ func (s *Source) MarshalBinary() ([]byte, error) {
 	return buf, nil
 }
 
-func readByteSlices(b []byte, count int) ([][]byte, error) {
+func readByteSlices(b []byte, count int) ([][]byte, error) { //nolint: unparam
 	lengths := make([]uint64, count)
 	var total uint64
 	for i := range lengths {

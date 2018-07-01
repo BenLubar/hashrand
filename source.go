@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"math/rand"
+	"runtime"
 )
 
 // Source implements rand.Source and rand.Source64. Source is not safe for
@@ -37,6 +38,23 @@ func (s *Source) Uint64() uint64 {
 
 // Int63 implements rand.Source.
 func (s *Source) Int63() int64 {
+	pc, _, _, ok := runtime.Caller(3)
+	if ok {
+		f := runtime.FuncForPC(pc - 1)
+		if f.Name() == "math/rand.read" {
+			// HACK: only return 7 bytes of entropy as rand.Read drops the top byte.
+			for len(s.buf) < 7 {
+				s.fill()
+			}
+
+			var b []byte
+			b, s.buf = s.buf[:7:7], s.buf[7:]
+			b = append(b, 0)
+
+			return int64(binary.LittleEndian.Uint64(b))
+		}
+	}
+
 	n := s.Uint64()
 	n &^= (1 << 63) // strip top bit
 	return int64(n)

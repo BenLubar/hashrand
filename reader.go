@@ -2,8 +2,8 @@ package hashrand
 
 import "io"
 
-// Read implements io.Reader. Unlike rand.Rand.Read, this method does not skip
-// every eighth byte.
+// Read implements io.Reader. Works identically to rand.Rand.Read unless
+// multiple instances of rand.Rand use the same Source.
 func (s *Source) Read(b []byte) (int, error) {
 	for len(s.buf) < len(b) {
 		s.fill()
